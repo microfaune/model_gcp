@@ -16,14 +16,9 @@ class MyPredictor(object):
         self._model = model
 
     def predict(self, instances, **kwargs):
-        preds_global, preds_local = self.predict_on_bytes(instances)
-        # data = np.frombuffer(base64.b64decode(instances), dtype=np.int16)
-        # data = data.astype(np.float32)
-        # X = self.compute_features([data])
-        # scores, local_scores = self.predict_model(np.array(X))
-        # return scores[0], local_scores[0]
-        # return instances
-        return json.dumps(preds_local.tolist())
+        return 'test'
+        # preds_global, preds_local = self.predict_on_bytes(instances)
+        # return json.dumps(preds_local[1].tolist())
 
     @classmethod
     def from_path(cls, model_dir):
@@ -49,14 +44,14 @@ class MyPredictor(object):
         """
         X = []
         for data in audio_signals:
+
             x = self.create_spec(data, fs=44100, n_mels=40, n_fft=2048,
                                  hop_len=1024).transpose()
             X.append(x[..., np.newaxis].astype(np.float32)/255)
         return X
 
-    def bytes_to_numpy(self, bytes_data):
+    def bytes_to_numpy(bytes_data):
         data = np.frombuffer(base64.b64decode(bytes_data), dtype=np.int16)
-        data = data.astype(np.float32)
         return data
 
     def predict_on_bytes(self, bytes_data):
@@ -103,7 +98,32 @@ class MyPredictor(object):
         scores = np.array(s)
         return scores, local_scores
 
-    def create_spec(self, data, fs, n_mels=32, n_fft=2048, hop_len=1024):
+    def load_wav(path, decimate=None):
+        """Load audio data.
+
+            Parameters
+            ----------
+            path: str
+                Wav file path.
+            decimate: int
+                If not None, downsampling by a factor of `decimate` value.
+
+            Returns
+            -------
+            S: array-like
+                Array of shape (Mel bands, time) containing the spectrogram.
+        """
+        fs, data = wavfile.read(path)
+
+        data = data.astype(np.float32)
+
+        if decimate is not None:
+            data = signal.decimate(data, decimate)
+            fs /= decimate
+
+        return fs, data
+
+    def create_spec(data, fs, n_mels=32, n_fft=2048, hop_len=1024):
         """Compute the Mel spectrogram from audio data.
 
             Parameters
@@ -131,7 +151,6 @@ class MyPredictor(object):
 
         # Convert power to dB
         S = librosa.power_to_db(S)
-        return S
 
 
 def create_model():

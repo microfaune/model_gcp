@@ -8,6 +8,7 @@ verify_ssl = true
 [packages]
 google-api-python-client = "*"
 scipy = "*"
+librosa = "*"
 
 [requires]
 python_version = "3.7"
