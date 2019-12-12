@@ -1,1 +1,2 @@
 librosa
+google-cloud-storage

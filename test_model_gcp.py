@@ -1,4 +1,6 @@
 import base64
+import time
+import json
 
 import googleapiclient.discovery
 import numpy as np
@@ -10,11 +12,15 @@ import librosa
 # print(data)
 # print(data.min(), data.max())
 
-enc = base64.b64encode(open("test1.wav", "rb").read()).decode()
+enc = base64.b64encode(open("SWIFT_20190725_073010_6.wav", "rb").read()[1000000:1001000]).decode()
+print(enc)
+
 
 PROJECT_ID = "gifted-honor-259919"
 MODEL_NAME = 'birdDetectionModel'
 VERSION_NAME = 'v1'
+
+t0 = time.time()
 
 # new_data = np.frombuffer(base64.b64decode(enc), dtype=np.int16)
 # print(new_data)
@@ -33,7 +39,11 @@ if 'error' in response:
     print(response)
     raise RuntimeError(response['error'])
 else:
-    print(response['predictions'])
+    # print(response['predictions'])
+    a = np.array(json.loads(response['predictions']))
+    print(a.max())
+    t1 = time.time()
+    print(f'time: {t1 - t0}')
     # new_data = np.frombuffer(base64.b64decode(response['predictions']), dtype=np.int16)
     # print(new_data)
 
@@ -85,6 +95,7 @@ def create_spec(data, fs, n_mels=32, n_fft=2048, hop_len=1024):
     S = librosa.feature.melspectrogram(
       data, sr=fs, n_fft=n_fft, hop_length=hop_len, n_mels=n_mels)
     S = S.astype(np.float32)
+    print(type(data))
 
     # Convert power to dB
     S = librosa.power_to_db(S)
@@ -95,4 +106,4 @@ def create_spec(data, fs, n_mels=32, n_fft=2048, hop_len=1024):
 # data = np.frombuffer(base64.b64decode(enc), dtype=np.int16)
 # data = data.astype(np.float32)
 # X = compute_features([data])
-# print(X)
+# print('asd', X[0][1, 2, 0], X[0][3, 0, 0])

@@ -37,7 +37,7 @@ gcloud beta ai-platform versions create $VERSION_NAME \
 For instance, to push a new version of `predictor.py`:
 
 ```
-cloud ai-platform versions delete v1 --model birdDetectionModel &&\
+gcloud ai-platform versions delete v1 --model birdDetectionModel &&\
 python setup.py sdist --formats=gztar &&\
 gsutil cp ./dist/deploy_bird_detection-0.1.tar.gz gs://$BUCKET_NAME/custom_predictions/deploy_bird_detection-0.1.tar.gz &&\
 gcloud beta ai-platform versions create $VERSION_NAME \
@@ -46,7 +46,8 @@ gcloud beta ai-platform versions create $VERSION_NAME \
   --python-version 3.5 \
   --origin gs://$BUCKET_NAME/custom_predictions/model/ \
   --package-uris gs://$BUCKET_NAME/custom_predictions/deploy_bird_detection-0.1.tar.gz \
-  --prediction-class predictor.MyPredictor
+  --prediction-class predictor.MyPredictor \
+  --verbosity debug
 ```
 
 To run the test with a Python client, run:

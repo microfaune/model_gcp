@@ -1,6 +1,7 @@
 import os
 import json
 import base64
+import urllib.request
 
 import numpy as np
 from tensorflow.keras import layers
@@ -10,20 +11,37 @@ from scipy.io import wavfile
 from scipy import signal
 import librosa
 
+from google.cloud import storage
+
+storage_client = storage.Client()
 
 class MyPredictor(object):
     def __init__(self, model):
         self._model = model
 
     def predict(self, instances, **kwargs):
-        preds_global, preds_local = self.predict_on_bytes(instances)
+        try:
+            bucket_name = kwargs.get('bucket_name', '')
+            file_name = kwargs.get('file_name', '')
+            blob = storage_client.bucket(bucket_name).get_blob(file_name)
+            audio_str = blob.download_as_string()
+            audio = np.frombuffer(audio_str, dtype=np.int16)
+            audio_float = audio.astype(np.float32)
+
+            X = self.compute_features([audio_float])
+            preds_global, preds_local = self.predict_model(np.array(X))
+
+            return json.dumps(preds_local[0].tolist())
+        except Exception as e:
+            return e
+
         # data = np.frombuffer(base64.b64decode(instances), dtype=np.int16)
         # data = data.astype(np.float32)
         # X = self.compute_features([data])
         # scores, local_scores = self.predict_model(np.array(X))
         # return scores[0], local_scores[0]
         # return instances
-        return json.dumps(preds_local.tolist())
+        # return json.dumps(preds_global.tolist())
 
     @classmethod
     def from_path(cls, model_dir):
@@ -53,6 +71,26 @@ class MyPredictor(object):
                                  hop_len=1024).transpose()
             X.append(x[..., np.newaxis].astype(np.float32)/255)
         return X
+
+    def predict_on_wav(self, wav_file):
+        """Detect bird presence in wav file.
+
+        Parameters
+        ----------
+        wav_file: str
+            wav file path.
+
+        Returns
+        -------
+        score: float
+            Prediction score of the classifier on the whole sequence
+        local_score: array-like
+            Time step prediction score
+        """
+        fs, data = load_wav(wav_file)
+        X = self.compute_features([data])
+        scores, local_scores = self.predict(np.array(X))
+        return scores[0], local_scores[0]
 
     def bytes_to_numpy(self, bytes_data):
         data = np.frombuffer(base64.b64decode(bytes_data), dtype=np.int16)
@@ -132,6 +170,28 @@ class MyPredictor(object):
         # Convert power to dB
         S = librosa.power_to_db(S)
         return S
+
+
+def load_wav(path):
+    """Load audio data.
+
+        Parameters
+        ----------
+        path: str
+            Wav file path.
+        decimate: int
+            If not None, downsampling by a factor of `decimate` value.
+
+        Returns
+        -------
+        S: array-like
+            Array of shape (Mel bands, time) containing the spectrogram.
+    """
+    urllib.request.urlretrieve(path, 'test.wav')
+    fs, data = wavfile.read('test.wav')
+    data = data.astype(np.float32)
+
+    return fs, data
 
 
 def create_model():
