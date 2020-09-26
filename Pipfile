@@ -10,7 +10,7 @@ google-api-python-client = "*"
 scipy = "*"
 librosa = "*"
 google-cloud-storage = "*"
-tensorflow = "==1.14"
+tensorflow = "==1.15.4"
 
 [requires]
 python_version = "3.7"
